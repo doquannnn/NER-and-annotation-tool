@@ -1,85 +1,91 @@
-# """
-# This script will convert vlsp 2018 to spacy data format
-# """
-# import os
-# import glob
-# import random
-# import re
-# import json
-# from extract_ners import case1, case2
+"""
+This script will convert vlsp 2018 to spacy data format
+"""
+import os
+import glob
+import random
+import re
+import json
+from extract_ners import case1, case2
 
-# s = set()
-# def create_files_list(path):
+s = set()
+def create_files_list(path):
 
-#     dirs = [dir for dir in os.listdir(path)]
-#     try:
-#         dirs.remove(".DS_Store")
-#     except ValueError:
-#         pass
-#     files = []
-#     for field in dirs:
+    dirs = [dir for dir in os.listdir(path)]
+    try:
+        dirs.remove(".DS_Store")
+    except ValueError:
+        pass
+    files = []
+    for field in dirs:
 
-#         dir_path = os.path.join(os.getcwd(), path, field)
-#         files += glob.glob(os.path.join(dir_path, "*.muc"))
-#         files += glob.glob(os.path.join(dir_path, "*.txt"))
-
-
-#     random.Random(4).shuffle(files)
-#     # print(len(files))
-#     return files
+        dir_path = os.path.join(os.getcwd(), path, field)
+        files += glob.glob(os.path.join(dir_path, "*.muc"))
+        files += glob.glob(os.path.join(dir_path, "*.txt"))
 
 
-# def convert_to_json(files):
-#     json_list = []
+    random.Random(4).shuffle(files)
+    # print(len(files))
+    return files
 
-#     for file in files:
-#         with open(file, 'r') as rf:
-#             lines = [line for line in rf.read().split('\n')]
 
-#         for line in lines:
-#             if not line:
-#                 continue
-#             ners = re.findall(re.compile("<ENAMEX.+?>.+?<\.?/ENAMEX.?>"), line)
-#             if len(ners) == 0:  # line without entities
-#                 continue
+def convert_to_json(files):
+    json_list = []
+    count_misc = 0
 
-#             l = line
-#             text_insides = []
-#             ent = []
+    for file in files:
+        with open(file, 'r') as rf:
+            lines = [line for line in rf.read().split('\n')]
 
-#             for ner in ners:
-#                 if len(re.findall("ENAMEX", ner)) == 2:
-#                     text_inside = case1(ner)
-#                     text_insides += text_inside
-#                     # print(text_inside[0][0])
-#                     # print(l)
-#                     # print(ner)
-#                     l = l.replace(ner, text_inside[0][0], 1)
-#                 else:
-#                     text_inside = case2(ner)
-#                     text_insides += text_inside
-#                     # print(file)
-#                     # print(text_inside)
-#                     # print('-'*50)
-#                     # print(ners)
-#                     # print(ner)
+        for line in lines:
+            if not line:
+                continue
 
-#                     l = l.replace(ner, text_inside[0][0] + " " + text_inside[1][0], 1)
+            ners = re.findall(re.compile("<ENAMEX.+?>.+?<\.?/ENAMEX.?>"), line)
+            if len(ners) == 0:  # line without entities
+                continue
 
-#                     l = l.replace("</ENAMEX>", "", 1)
+            l = line
+            text_insides = []
+            ent = []
 
-#             if l.find("ENAMEX") != -1:
-#                 continue
+            for ner in ners:
+                if len(re.findall("ENAMEX", ner)) == 2:
+                    text_inside = case1(ner)
+                    text_insides += text_inside
+                    # print(text_inside[0][0])
+                    # print(l)
+                    # print(ner)
+                    l = l.replace(ner, text_inside[0][0], 1)
+                else:
+                    text_inside = case2(ner)
+                    text_insides += text_inside
+                    # print(file)
+                    # print(text_inside)
+                    # print('-'*50)
+                    # print(ners)
+                    # print(ner)
 
-#             for text, type in text_insides:
-#                 result = [(_.start(), _.end()) for _ in re.finditer(text, l)]
-#                 for start, end in result:
-#                     ent.append((start, end, type))
+                    l = l.replace(ner, text_inside[0][0] + " " + text_inside[1][0], 1)
 
-#             ents = {"entities": ent}
-#             json_list.append([l, ents])
+                    l = l.replace("</ENAMEX>", "", 1)
 
-#     return json_list
+            if l.find("ENAMEX") != -1:
+                continue
+
+            for text, type in text_insides:
+                result = [(_.start(), _.end()) for _ in re.finditer(text, l)]
+                for start, end in result:
+                    ent.append((start, end, type))
+                    if type == "MISCELLANEOUS":
+                        count_misc += 1
+
+
+            ents = {"entities": ent}
+            json_list.append([l, ents])
+    print(count_misc)
+    print(a)
+    return json_list
 
 # train_files = create_files_list('data/dev')
 # train_json = convert_to_json(train_files)
@@ -97,14 +103,15 @@
 # with open('data/valid_data.json', 'w', encoding="utf-8") as outfile:
 #     json.dump(val_json, outfile, ensure_ascii=False)
 
+test_files = create_files_list('data/test')
+test_json = convert_to_json(test_files)
 
-import spacy
-nlp = spacy.load('output/model-best')
-with open("data/test_without_labels/Giai tri - Am nhac/24440102.txt") as f:
-    data = f.read()
-doc = nlp(data)
-for ent in doc.ents:
-    print(ent, ent.label_)
+# with open('data/test_data.json', 'w', encoding="utf-8") as outfile:
+#     json.dump(test_json, outfile, ensure_ascii=False)
+
+# 2629
+
+# misc: train: 934, dev: 193, test: 338
 
 
 
